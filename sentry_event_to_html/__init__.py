@@ -43,12 +43,37 @@ class Type_exception(object):
 
         self.stacktrace = Type_stacktrace(stacktrace)
 
+    def css(self):
+        return '''
+<style>
+ .code {
+    display: block;
+    font-family: monospace;
+    white-space: pre;
+    margin: 0; 
+ }
+</style>        
+'''
+
+    def script(self):
+        return '''
+<script
+			  src="https://code.jquery.com/jquery-3.3.1.min.js"
+			  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+			  crossorigin="anonymous"></script>
+
+'''
+
     def to_html(self):
-        return '''type: {}<br>
+        return '''
+{}
+{}
+type: {}<br>
 value: {}<br>
 module: {}<br>
 mechanism: {}<br>
-stacktrace: {}<br>'''.format(e(self.type), e(self.value), e(self.module),
+stacktrace: {}<br>'''.format(self.css(), self.script(),
+            e(self.type), e(self.value), e(self.module),
                              e(self.mechanism), self.stacktrace.to_html())
 
 class Type_stacktrace(object):
@@ -78,25 +103,25 @@ class Type_frame(object):
 
 
     def to_html(self):
-        return '''<div>
+        return '''
 {abs_path} in {function}()<br>
-<pre>
-{pre_context}
-<b>{context_line}</b>
-{post_context}
-</pre>
-<table>{vars}</table>
-</div>'''.format(abs_path=e(self.abs_path), function=e(self.function),
+ <div class="toggle{id} code">{pre_context}</div>
+ <div onclick="toggle({id})" class="code"><b>{context_line}</b></div>
+ <div class="toggle{id} code">{post_context}</div>
+<table class="toggle{id}">{vars}</table>
+
+'''.format(abs_path=e(self.abs_path), function=e(self.function),
                  pre_context=self.pre_post_context(self.pre_context, self.lineno-len(self.pre_context)),
-                 context_line=self.pre_post_context([self.context_line], self.lineno),
+                 context_line=self.pre_post_context([self.context_line], self.lineno,
+                                                    '''<a href="#" onclick="$('.toggle{id}').toggle()">[+]</a>'''),
                    post_context=self.pre_post_context(self.post_context, self.lineno+1),
                                   id=self.id,
                  vars='\n'.join(['<tr><th>{}</th><td>{}</td></tr>'.format(e(key), e(value)) for key, value in
                                  sorted(self.vars.items())]),
                  )
 
-    def pre_post_context(self, lines, start_of_line_number):
+    def pre_post_context(self, lines, start_of_line_number, pre_line='   '):
         rows=[]
         for i, line in enumerate(lines):
-            rows.append('{:>4}: {}'.format(start_of_line_number+i, e(line)))
+            rows.append('{}{:>4}: {}'.format(pre_line, start_of_line_number+i, e(line)))
         return '\n'.join(rows)
