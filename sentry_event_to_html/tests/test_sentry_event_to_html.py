@@ -30,10 +30,10 @@ class TestCase(unittest.TestCase):
         html=sentry_event_to_html.sentry_event_to_html(self.create_event())
         temp_html = tempfile.mktemp(prefix='test_sentry_event_to_html', suffix='.html')
         with io.open(temp_html, 'wt', encoding='utf8') as fd:
-            fd.write('''
-            <html>
+            fd.write('''<html>
+             <head>{}</head>
             <body>
             {}
             </body>
-            </html>'''.format(html))
+            </html>'''.format(sentry_event_to_html.html_head(), html))
         webbrowser.open(temp_html)

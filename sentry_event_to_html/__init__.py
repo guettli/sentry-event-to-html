@@ -15,7 +15,29 @@ def sentry_event_to_html(event):
     type_exception = parse_sentry_event(event)
     return type_exception.to_html()
 
+def html_head():
+    return '''
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <script>
+  $( function() {
+    $( ".accordion" ).accordion({
+      collapsible: true
+    });
+  } );
+  </script>
 
+  <style>
+   .code {
+      display: block;
+      font-family: monospace;
+      white-space: pre;
+      margin: 0; 
+   }
+</style>   
+
+  '''
 
 def parse_sentry_event(event):
     assert sorted(event.keys()) == ['exception', 'level'], event.keys()
@@ -43,36 +65,14 @@ class Type_exception(object):
 
         self.stacktrace = Type_stacktrace(stacktrace)
 
-    def css(self):
-        return '''
-<style>
- .code {
-    display: block;
-    font-family: monospace;
-    white-space: pre;
-    margin: 0; 
- }
-</style>        
-'''
-
-    def script(self):
-        return '''
-<script
-			  src="https://code.jquery.com/jquery-3.3.1.min.js"
-			  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
-			  crossorigin="anonymous"></script>
-
-'''
 
     def to_html(self):
         return '''
-{}
-{}
 type: {}<br>
 value: {}<br>
 module: {}<br>
 mechanism: {}<br>
-stacktrace: {}<br>'''.format(self.css(), self.script(),
+stacktrace: {}<br>'''.format(
             e(self.type), e(self.value), e(self.module),
                              e(self.mechanism), self.stacktrace.to_html())
 
@@ -84,7 +84,8 @@ class Type_stacktrace(object):
             self.frames.append(Type_frame(**frame))
 
     def to_html(self):
-        return '\n'.join([frame.to_html() for frame in self.frames])
+        return '<div class="accordion">{}</div>'.format(
+            '\n'.join([frame.to_html() for frame in self.frames]))
 
 class Type_frame(object):
     id_counter = count(0)
@@ -104,16 +105,17 @@ class Type_frame(object):
 
     def to_html(self):
         return '''
-{abs_path} in {function}()<br>
+<h3>{abs_path} in {function}()</h3>
+<div>
  <div class="toggle{id} code">{pre_context}</div>
- <div onclick="toggle({id})" class="code"><b>{context_line}</b></div>
+ <div class="code"><b>{context_line}</b></div>
  <div class="toggle{id} code">{post_context}</div>
-<table class="toggle{id}">{vars}</table>
-
+ <table class="toggle{id}">{vars}</table>
+</div>
 '''.format(abs_path=e(self.abs_path), function=e(self.function),
                  pre_context=self.pre_post_context(self.pre_context, self.lineno-len(self.pre_context)),
                  context_line=self.pre_post_context([self.context_line], self.lineno,
-                                                    '''<a href="#" onclick="$('.toggle{id}').toggle()">[+]</a>'''),
+                                                    '''<a href="#" onclick="$('.toggle{id}').toggle()">[+]</a>'''.format(id=self.id)),
                    post_context=self.pre_post_context(self.post_context, self.lineno+1),
                                   id=self.id,
                  vars='\n'.join(['<tr><th>{}</th><td>{}</td></tr>'.format(e(key), e(value)) for key, value in
