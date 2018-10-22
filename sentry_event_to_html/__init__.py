@@ -23,7 +23,8 @@ def html_head():
   <script>
   $( function() {
     $( ".accordion" ).accordion({
-      collapsible: true
+      collapsible: true,
+      active: false,
     });
   } );
   </script>
@@ -35,6 +36,7 @@ def html_head():
       white-space: pre;
       margin: 0; 
    }
+   .event-variables th { text-align: left }
 </style>   
 
   '''
@@ -84,8 +86,7 @@ class Type_stacktrace(object):
             self.frames.append(Type_frame(**frame))
 
     def to_html(self):
-        return '<div class="accordion">{}</div>'.format(
-            '\n'.join([frame.to_html() for frame in self.frames]))
+        return '\n'.join([frame.to_html() for frame in self.frames])
 
 class Type_frame(object):
     id_counter = count(0)
@@ -105,25 +106,26 @@ class Type_frame(object):
 
     def to_html(self):
         return '''
+<div class="accordion">
 <h3>{abs_path} in {function}()</h3>
 <div>
- <div class="toggle{id} code">{pre_context}</div>
+ <div class="code">{pre_context}</div>
  <div class="code"><b>{context_line}</b></div>
- <div class="toggle{id} code">{post_context}</div>
- <table class="toggle{id}">{vars}</table>
+ <div class="code">{post_context}</div>
+ <div class="accordion"><h3>Variables</h3><table class="event-variables">{vars}</table></div>
+</div>
 </div>
 '''.format(abs_path=e(self.abs_path), function=e(self.function),
                  pre_context=self.pre_post_context(self.pre_context, self.lineno-len(self.pre_context)),
-                 context_line=self.pre_post_context([self.context_line], self.lineno,
-                                                    '''<a href="#" onclick="$('.toggle{id}').toggle()">[+]</a>'''.format(id=self.id)),
+                 context_line=self.pre_post_context([self.context_line], self.lineno),
                    post_context=self.pre_post_context(self.post_context, self.lineno+1),
                                   id=self.id,
                  vars='\n'.join(['<tr><th>{}</th><td>{}</td></tr>'.format(e(key), e(value)) for key, value in
                                  sorted(self.vars.items())]),
                  )
 
-    def pre_post_context(self, lines, start_of_line_number, pre_line='   '):
+    def pre_post_context(self, lines, start_of_line_number):
         rows=[]
         for i, line in enumerate(lines):
-            rows.append('{}{:>4}: {}'.format(pre_line, start_of_line_number+i, e(line)))
+            rows.append('{:>4}: {}'.format(start_of_line_number+i, e(line)))
         return '\n'.join(rows)
