@@ -4,8 +4,11 @@
 sentry-event-to-html: Create HTML from a sentry event
 =====================================================
 
+State
+=====
 
-https://github.com/guettli/sentry-event-to-html
+Unfinished. I think it makes more sense to convert the JSON to HTML via JavaScript in the browser.
+
 
 Install
 =======
